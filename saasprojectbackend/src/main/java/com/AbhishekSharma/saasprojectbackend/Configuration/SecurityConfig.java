@@ -3,7 +3,6 @@ package com.AbhishekSharma.saasprojectbackend.Configuration;
 import com.AbhishekSharma.saasprojectbackend.Service.SecurityService.CustomUserDetailsService;
 import com.AbhishekSharma.saasprojectbackend.Service.SecurityService.JwtAuthenticationFilter;
 import com.AbhishekSharma.saasprojectbackend.Service.SecurityService.JwtService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

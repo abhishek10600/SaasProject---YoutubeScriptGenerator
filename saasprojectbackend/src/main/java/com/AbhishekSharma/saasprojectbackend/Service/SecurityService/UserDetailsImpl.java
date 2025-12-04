@@ -2,7 +2,6 @@ package com.AbhishekSharma.saasprojectbackend.Service.SecurityService;
 
 import com.AbhishekSharma.saasprojectbackend.Entity.User;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
