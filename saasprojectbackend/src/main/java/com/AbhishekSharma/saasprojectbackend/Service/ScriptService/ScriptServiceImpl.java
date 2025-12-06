@@ -1,106 +1,142 @@
 package com.AbhishekSharma.saasprojectbackend.Service.ScriptService;
 
+import com.AbhishekSharma.saasprojectbackend.Entity.Script;
 import com.AbhishekSharma.saasprojectbackend.Entity.User;
 import com.AbhishekSharma.saasprojectbackend.Payload.ScriptRequestDTO;
-import com.AbhishekSharma.saasprojectbackend.Payload.ScriptResponseDTO;
+import com.AbhishekSharma.saasprojectbackend.Repository.ScriptRepository;
+import com.AbhishekSharma.saasprojectbackend.Repository.UserRepository;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ScriptServiceImpl implements ScriptService{
 
+    private final UserRepository userRepository;
+    private final ScriptRepository scriptRepository;
     private final ChatClient gemini;
 
-    public ScriptServiceImpl(ChatClient.Builder builder){
+    public ScriptServiceImpl(ChatClient.Builder builder, UserRepository userRepository, ScriptRepository scriptRepository){
         this.gemini = builder.build();
+        this.userRepository = userRepository;
+        this.scriptRepository = scriptRepository;
     }
 
     @Override
-    public String generateScript(ScriptRequestDTO scriptRequestDTO) {
+    public ScriptStructure generateScript(ScriptRequestDTO scriptRequestDTO) {
         String systemMessage = buildSystemMessage();
         String userPrompt = buildUserPrompt(scriptRequestDTO);
 
-        return gemini.prompt().
+        ScriptStructure generatedScript =  gemini.prompt().
                 user(u->{
                     u.text(userPrompt);
-                    u.param("title", scriptRequestDTO.getTitle());
-                    u.param("duration", scriptRequestDTO.getDurationSeconds());
-                    u.param("genre", scriptRequestDTO.getVideoGenre());
-                    u.param("tone", scriptRequestDTO.getScriptTone());
-                    u.param("writingStyle", scriptRequestDTO.getWritingStyle());
-                    u.param("targetAudience", scriptRequestDTO.getTargetAudience());
-                    u.param("channelNiche", scriptRequestDTO.getChannelNiche());
-                    u.param("hookStyle", scriptRequestDTO.getHookStyle());
-                    u.param("pacingStyle", scriptRequestDTO.getPacingStyle());
-                    u.param("ctaType", scriptRequestDTO.getCtaType());
-                    u.param("depthLevel", scriptRequestDTO.getDepthLevel());
-                    u.param("voiceStyle", scriptRequestDTO.getVoiceStyle());
-                    u.param("storytellingPreference", scriptRequestDTO.getStorytellingPreference());
-                    u.param("emotionLevel", scriptRequestDTO.getEmotionLevel());
-                    u.param("language", scriptRequestDTO.getLanguage());
                 })
                 .system(systemMessage)
                 .call()
-                .content();
+                .entity(ScriptStructure.class);
+
+        if (generatedScript == null || generatedScript.script() == null || generatedScript.script().isBlank()) {
+            throw new RuntimeException("AI returned empty or invalid script");
+        }
+
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow(()-> new RuntimeException("User not found"));
+
+        Script script = Script.builder()
+                .user(user)
+                .title(scriptRequestDTO.getTitle())
+                .durationSeconds(scriptRequestDTO.getDurationSeconds())
+                .videoGenre(scriptRequestDTO.getVideoGenre())
+                .scriptTone(scriptRequestDTO.getScriptTone())
+                .writingStyle(scriptRequestDTO.getWritingStyle())
+                .targetAudience(scriptRequestDTO.getTargetAudience())
+                .channelNiche(scriptRequestDTO.getChannelNiche())
+                .hookStyle(scriptRequestDTO.getHookStyle())
+                .pacingStyle(scriptRequestDTO.getPacingStyle())
+                .ctaType(scriptRequestDTO.getCtaType())
+                .depthLevel(scriptRequestDTO.getDepthLevel())
+                .voiceStyle(scriptRequestDTO.getVoiceStyle())
+                .storytellingPreference(scriptRequestDTO.getStorytellingPreference())
+                .emotionLevel(scriptRequestDTO.getEmotionLevel())
+                .language(scriptRequestDTO.getLanguage())
+                .generatedScript(generatedScript.script())
+                .build();
+
+        scriptRepository.save(script);
+
+        return generatedScript;
 
     }
 
 
     private String buildSystemMessage(){
-        return "You are an elite YouTube scriptwriter specializing in faceless, high-retention videos.\n" +
-                "\n" +
-                "Your job is to generate:\n" +
-                "• High-watchtime YouTube scripts\n" +
-                "• Structured narration for voiceover\n" +
-                "• Emotionally compelling storytelling\n" +
-                "• Pacing and flow that matches the video duration\n" +
-                "• Hooks that immediately capture attention\n" +
-                "• Closings that convert (CTA-aware)\n" +
-                "\n" +
-                "Rules you MUST follow:\n" +
-                "1. Always respect the user-provided parameters (tone, style, pacing, duration, etc.).\n" +
-                "2. Never mention the system or user prompts in your output.\n" +
-                "3. Output only the final YouTube script (no explanations).\n" +
-                "4. If research, statistics, or quotes are enabled, include them naturally without forcing.\n" +
-                "5. Write in short, punchy, voiceover-friendly lines to maintain retention.\n" +
-                "6. Maintain a faceless YouTube style — narration only (no on-camera dialogue).\n" +
-                "7. Match the length to the user’s desired duration + pacing.\n" +
-                "8. Avoid all topics listed in the user's “avoidTopics”.\n" +
-                "9. Always tailor your writing to the channel niche and target audience.\n" +
-                "\n" +
-                "Your output must always be:\n" +
-                "- Polished\n" +
-                "- Cohesive\n" +
-                "- Engaging\n" +
-                "- Realistic\n" +
-                "- Retention-optimized";
+        return """
+                You are an elite YouTube scriptwriter specializing in faceless, high-retention videos.
+                
+                Your job is to generate:
+                • High-watchtime YouTube scripts
+                • Structured narration for voiceover
+                • Emotionally compelling storytelling
+                • Pacing and flow that matches the video duration
+                • Hooks that immediately capture attention
+                • Closings that convert (CTA-aware)
+                
+                Rules you MUST follow:
+                1. Always respect the user-provided parameters (tone, style, pacing, duration, etc.).
+                2. Never mention the system or user prompts in your output.
+                3. Output only the final YouTube script (no explanations).
+                4. If research, statistics, or quotes are enabled, include them naturally without forcing.
+                5. Write in short, punchy, voiceover-friendly lines to maintain retention.
+                6. Maintain a faceless YouTube style — narration only (no on-camera dialogue).
+                7. Match the length to the user’s desired duration + pacing.
+                8. Avoid all topics listed in the user's “avoidTopics”.
+                9. Always tailor your writing to the channel niche and target audience.
+                
+                Your output must always be:
+                - Polished
+                - Cohesive
+                - Engaging
+                - Realistic
+                - Retention-optimized
+                """;
     }
 
     private String buildUserPrompt(ScriptRequestDTO scriptRequestDTO){
-        return "Generate a complete YouTube script using the details below.\n" +
-                "\n" +
-                "[USER INPUTS]\n" +
-                "Title/Topic: {title}\n" +
-                "Duration: {duration} seconds\n" +
-                "Genre: {genre}\n" +
-                "Tone: {tone}\n" +
-                "Writing Style: {writingStyle}\n" +
-                "Target Audience: {targetAudience}\n" +
-                "Channel Niche: {channelNiche}\n" +
-                "Hook Style: {hookStyle}\n" +
-                "Pacing Style: {pacingStyle}\n" +
-                "Call-To-Action Type: {ctaType}\n" +
-                "Depth Level: {depthLevel}\n" +
-                "Voice Style: {voiceStyle}\n" +
-                "Storytelling Preference: {storytellingPreference}\n" +
-                "Emotion Level: {emotionLevel}\n" +
-                "Language: {language}\n" +
-                "\n" +
-                "[OUTPUT FORMAT]\n" +
-                "1. Suggested Video Title (optional)\n" +
-                "2. Full YouTube Script\n" +
-                "3. Final CTA matching the selected ctaType\n" +
-                "\n" +
-                "Do NOT include any explanations. Only output the script.";
+        return String.format("""
+        Generate a complete YouTube script using the details below.
+        Title/Topic: %s
+        Duration: %d seconds
+        Genre: %s
+        Tone: %s
+        Writing Style: %s
+        Target Audience: %s
+        Channel Niche: %s
+        Hook Style: %s
+        Pacing Style: %s
+        Call-To-Action Type: %s
+        Depth Level: %s
+        Voice Style: %s
+        Storytelling Preference: %s
+        Emotion Level: %s
+        Language: %s
+        [OUTPUT FORMAT]
+        1. Full YouTube Script
+        """,
+                scriptRequestDTO.getTitle(),
+                scriptRequestDTO.getDurationSeconds(),
+                scriptRequestDTO.getVideoGenre(),
+                scriptRequestDTO.getScriptTone(),
+                scriptRequestDTO.getWritingStyle(),
+                scriptRequestDTO.getTargetAudience(),
+                scriptRequestDTO.getChannelNiche(),
+                scriptRequestDTO.getHookStyle(),
+                scriptRequestDTO.getPacingStyle(),
+                scriptRequestDTO.getCtaType(),
+                scriptRequestDTO.getDepthLevel(),
+                scriptRequestDTO.getVoiceStyle(),
+                scriptRequestDTO.getStorytellingPreference(),
+                scriptRequestDTO.getEmotionLevel(),
+                scriptRequestDTO.getLanguage()
+        );
     }
 }
