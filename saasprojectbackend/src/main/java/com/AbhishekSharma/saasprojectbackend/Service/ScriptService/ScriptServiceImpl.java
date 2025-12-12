@@ -3,11 +3,15 @@ package com.AbhishekSharma.saasprojectbackend.Service.ScriptService;
 import com.AbhishekSharma.saasprojectbackend.Entity.Script;
 import com.AbhishekSharma.saasprojectbackend.Entity.User;
 import com.AbhishekSharma.saasprojectbackend.Payload.ScriptRequestDTO;
+import com.AbhishekSharma.saasprojectbackend.Payload.ScriptResponseDTO;
 import com.AbhishekSharma.saasprojectbackend.Repository.ScriptRepository;
 import com.AbhishekSharma.saasprojectbackend.Repository.UserRepository;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ScriptServiceImpl implements ScriptService{
@@ -66,6 +70,52 @@ public class ScriptServiceImpl implements ScriptService{
 
         return generatedScript;
 
+    }
+
+    @Override
+    public List<ScriptResponseDTO> getUserScripts(){
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow(()-> new RuntimeException("User not found."));
+
+        return scriptRepository.findByUser(user)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
+    public ScriptResponseDTO getUserScriptsById(UUID scriptId){
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow(()-> new RuntimeException("User not found"));
+        Script script = scriptRepository.findById(scriptId).orElseThrow(()-> new RuntimeException("Script not found"));
+
+        if(!script.getUser().getId().equals(user.getId())){
+            throw new RuntimeException("Unauthorized access");
+        }
+
+        return mapToDTO(script);
+    }
+
+    private ScriptResponseDTO mapToDTO(Script script){
+        return ScriptResponseDTO.builder()
+                .id(script.getId())
+                .title(script.getTitle())
+                .durationSeconds(script.getDurationSeconds())
+                .videoGenre(script.getVideoGenre())
+                .scriptTone(script.getScriptTone())
+                .writingStyle(script.getWritingStyle())
+                .targetAudience(script.getTargetAudience())
+                .channelNiche(script.getChannelNiche())
+                .hookStyle(script.getHookStyle())
+                .pacingStyle(script.getPacingStyle())
+                .ctaType(script.getCtaType())
+                .depthLevel(script.getDepthLevel())
+                .voiceStyle(script.getVoiceStyle())
+                .storytellingPreference(script.getStorytellingPreference())
+                .emotionLevel(script.getEmotionLevel())
+                .language(script.getLanguage())
+                .generatedScript(script.getGeneratedScript())
+                .createdAt(script.getCreatedAt())
+                .build();
     }
 
 
