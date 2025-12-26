@@ -32,6 +32,8 @@ export default function LoginForm() {
   async function onSubmit(data: LoginData) {
     setLoading(true);
     console.log("Login Data:", data);
+    console.log("email: ", data.email);
+    console.log("password: ", data.password);
     setLoading(false);
   }
 
