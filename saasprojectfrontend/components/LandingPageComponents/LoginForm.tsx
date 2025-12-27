@@ -10,6 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 import { FcGoogle } from "react-icons/fc"; // <-- install react-icons if not installed
+import { loginUser } from "@/services/AuthService";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/store/store";
+import { fetchUser, setToken } from "@/store/authSlice";
 
 const LoginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -20,6 +24,7 @@ type LoginData = z.infer<typeof LoginSchema>;
 
 export default function LoginForm() {
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
 
   const {
     register,
@@ -34,7 +39,17 @@ export default function LoginForm() {
     console.log("Login Data:", data);
     console.log("email: ", data.email);
     console.log("password: ", data.password);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const res = await loginUser(data.email, data.password);
+      dispatch(setToken(res.token));
+      dispatch(fetchUser());
+      console.log(res);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleGoogleLogin = async () => {

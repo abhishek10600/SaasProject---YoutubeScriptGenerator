@@ -10,6 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 import { FcGoogle } from "react-icons/fc"; // <-- install react-icons if not installed
+import { signUpUser } from "@/services/AuthService";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/store/store";
+import { fetchUser, setToken } from "@/store/authSlice";
 
 const SignUpSchema = z
   .object({
@@ -26,6 +30,7 @@ type SignUpData = z.infer<typeof SignUpSchema>;
 
 export default function SignUpForm() {
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
 
   const {
     register,
@@ -38,7 +43,17 @@ export default function SignUpForm() {
   async function onSubmit(data: SignUpData) {
     setLoading(true);
     console.log("Signup Data:", data);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const res = await signUpUser(data.email, data.password);
+      dispatch(setToken(res.token));
+      dispatch(fetchUser());
+      console.log(res);
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleGoogleLogin = async () => {
@@ -117,7 +132,10 @@ export default function SignUpForm() {
           )}
         </div>
 
-        <Button className="bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition shadow-lg shadow-red-600/30 cursor-pointer w-full" disabled={loading}>
+        <Button
+          className="bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition shadow-lg shadow-red-600/30 cursor-pointer w-full"
+          disabled={loading}
+        >
           {loading ? "Creating account..." : "Sign Up"}
         </Button>
       </form>
