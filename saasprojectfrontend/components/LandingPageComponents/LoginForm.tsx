@@ -14,6 +14,7 @@ import { loginUser } from "@/services/AuthService";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
 import { fetchUser, setToken } from "@/store/authSlice";
+import { redirect } from "next/navigation";
 
 const LoginSchema = z.object({
   email: z.string().email("Enter a valid email address"),

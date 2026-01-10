@@ -14,6 +14,7 @@ import { signUpUser } from "@/services/AuthService";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/store";
 import { fetchUser, setToken } from "@/store/authSlice";
+import { redirect } from "next/navigation";
 
 const SignUpSchema = z
   .object({
@@ -49,6 +50,7 @@ export default function SignUpForm() {
       dispatch(setToken(res.token));
       dispatch(fetchUser());
       console.log(res);
+      redirect("/dashboard");
     } catch (error) {
       console.log(error);
     } finally {

@@ -11,19 +11,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSeparator,
-  FieldSet,
-  FieldTitle,
-} from "@/components/ui/field";
-
 import { Input } from "@/components/ui/input";
 import SignUpForm from "./LandingPageComponents/SignupForm";
 import LoginForm from "./LandingPageComponents/LoginForm";
@@ -31,6 +18,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import Link from "next/link";
 import { fetchUser, loadTokenFromStorage, logout } from "@/store/authSlice";
+import { redirect } from "next/navigation";
 
 const Navbar = () => {
   const { isAuthenticated, user } = useSelector(
